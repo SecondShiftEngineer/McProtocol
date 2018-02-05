@@ -1,4 +1,4 @@
-﻿#define old
+﻿#define old //Now that .NET Standard is supported in UWP old code is Good
 using System;
 using System.Collections.Generic;
 using System.Linq;
