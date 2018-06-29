@@ -19,6 +19,7 @@ namespace MCProtocol
 {
     public class PLCData<T>
     {
+        public static Mitsubishi.Plc PLC;
         Mitsubishi.PlcDeviceType DeviceType;
         int Address;
         int Length;
@@ -143,6 +144,16 @@ namespace MCProtocol
                 }
             }
         }
+
+        public async Task WriteData()
+        {
+            await PLC.WriteDeviceBlock(this.DeviceType, this.Address, LENGTH, bytes);
+        }
+        public async Task ReadData()
+        {
+            this.bytes = await PLC.ReadDeviceBlock(DeviceType, this.Address, this.LENGTH);
+        }
+
     }
     [StructLayout(LayoutKind.Explicit)]
     public class Union
@@ -236,8 +247,10 @@ namespace MCProtocol
             Task<int> GetBitDevice(PlcDeviceType iType, int iAddress, int iSize, int[] oData);
             Task<int> WriteDeviceBlock(string iDeviceName, int iSize, int[] iData);
             Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int iSize, int[] iData);
+            Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int iSize, byte[] bData);
             Task<byte[]> ReadDeviceBlock(string iDeviceName, int iSize, int[] oData);
             Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int iSize, int[] oData);
+            Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int iSize);
             Task<int> SetDevice(string iDeviceName, int iData);
             Task<int> SetDevice(PlcDeviceType iType, int iAddress, int iData);
             Task<int> GetDevice(string iDeviceName);
@@ -453,6 +466,71 @@ namespace MCProtocol
                 int rtCode = Command.SetResponse(rtResponse);
                 return rtCode;
             }
+            public async Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int iSize, byte[] bData)
+            {
+
+                PlcDeviceType type = iType;
+                int addr = iAddress;
+                List<byte> data;
+                byte[] sdCommand;
+                int length;
+                //TEST Create this write switch statement
+                switch (CommandFrame)
+                {
+                    case McFrame.MC3E:
+                        data = new List<byte>(6)
+                    {
+                        (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) type
+                      , (byte) iSize
+                      , (byte) (iSize >> 8)
+                    };
+                        data.AddRange(bData);
+                        sdCommand = Command.SetCommandMC3E(0x1401, 0x0000, data.ToArray());
+                        length = 11;
+                        break;
+                    case McFrame.MC4E:
+                        data = new List<byte>(6)
+                    {
+                        (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) type
+                      , (byte) iSize
+                      , (byte) (iSize >> 8)
+                    };
+                        data.AddRange(bData);
+                        sdCommand = Command.SetCommandMC4E(0x1401, 0x0000, data.ToArray());
+                        length = 15;
+                        break;
+                    case McFrame.MC1E:
+                        data = new List<byte>(6)
+                   {
+                          (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) (addr >> 24)
+                      , 0x20
+                      , 0x44
+                      , (byte) iSize
+                      , 0x00
+                    };
+                        data.AddRange(bData);
+                        //Add data
+                        sdCommand = Command.SetCommandMC1E(0x03, data.ToArray());
+                        length = 2;
+                        break;
+                    default:
+                        throw new Exception("Message frame not supported");
+                }
+
+                //TEST take care of the writing
+                byte[] rtResponse = await TryExecution(sdCommand, length);
+                int rtCode = Command.SetResponse(rtResponse);
+                return rtCode;
+            }
             // ====================================================================================
             public async Task<byte[]> ReadDeviceBlock(string iDeviceName, int iSize, int[] oData)
             {
@@ -528,6 +606,68 @@ namespace MCProtocol
                 }
                 return rtData;
             }
+            public async Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int iSize)
+            {
+
+                PlcDeviceType type = iType;
+                int addr = iAddress;
+                List<byte> data;
+                byte[] sdCommand;
+                int length;
+
+                switch (CommandFrame)
+                {
+                    case McFrame.MC3E:
+                        data = new List<byte>(6)
+                    {
+                        (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) type
+                      , (byte) iSize
+                      , (byte) (iSize >> 8)
+                    };
+                        sdCommand = Command.SetCommandMC3E(0x0401, 0x0000, data.ToArray());
+                        length = 11;
+                        break;
+                    case McFrame.MC4E:
+                        data = new List<byte>(6)
+                    {
+                        (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) type
+                      , (byte) iSize
+                      , (byte) (iSize >> 8)
+                    };
+                        sdCommand = Command.SetCommandMC4E(0x0401, 0x0000, data.ToArray());
+                        length = 15;
+                        break;
+                    case McFrame.MC1E:
+                        data = new List<byte>(6)
+                    {
+                          (byte) addr
+                      , (byte) (addr >> 8)
+                      , (byte) (addr >> 16)
+                      , (byte) (addr >> 24)
+                      , 0x20
+                      , 0x44
+                      , (byte) iSize
+                      , 0x00
+                    };
+                        sdCommand = Command.SetCommandMC1E(0x01, data.ToArray());
+                        length = 2;
+                        break;
+                    default:
+                        throw new Exception("Message frame not supported");
+                }
+
+                byte[] rtResponse = await TryExecution(sdCommand, length);
+                //TEST verify read responses
+                int rtCode = Command.SetResponse(rtResponse);
+                byte[] rtData = Command.Response;                
+                return rtData;
+            }
             // ====================================================================================
             public async Task<int> SetDevice(string iDeviceName, int iData)
             {
@@ -570,7 +710,6 @@ namespace MCProtocol
             // ====================================================================================
             public async Task<int> GetDevice(PlcDeviceType iType, int iAddress)
             {
-
                 PlcDeviceType type = iType;
                 int addr = iAddress;
                 var data = new List<byte>(6)
