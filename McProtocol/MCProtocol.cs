@@ -17,9 +17,12 @@ using System.Runtime.InteropServices;
 
 namespace MCProtocol
 {
-    public class PLCData<T>
+    public class PLCData
     {
         public static Mitsubishi.Plc PLC;
+    }
+    public class PLCData<T> : PLCData
+    {   
         Mitsubishi.PlcDeviceType DeviceType;
         int Address;
         int Length;
@@ -525,7 +528,6 @@ namespace MCProtocol
                     default:
                         throw new Exception("Message frame not supported");
                 }
-
                 //TEST take care of the writing
                 byte[] rtResponse = await TryExecution(sdCommand, length);
                 int rtCode = Command.SetResponse(rtResponse);
