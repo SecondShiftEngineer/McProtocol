@@ -22,7 +22,7 @@ namespace MCProtocol
         public static Mitsubishi.Plc PLC;
     }
     public class PLCData<T> : PLCData
-    {   
+    {
         Mitsubishi.PlcDeviceType DeviceType;
         int Address;
         int Length;
@@ -52,10 +52,10 @@ namespace MCProtocol
                     this.LENGTH = 4 * Length;
                     break;
                 case "Single":
-                    this.LENGTH = 2 * Length;
+                    this.LENGTH = 4 * Length;
                     break;
                 case "Double":
-                    this.LENGTH = 4 * Length;
+                    this.LENGTH = 8 * Length;
                     break;
                 case "Char":
                     this.LENGTH = Length;
@@ -75,7 +75,7 @@ namespace MCProtocol
                 switch (t)
                 {
                     case "Boolean":
-                        return (T)Convert.ChangeType(((this.bytes[i / 16] >> (i % 16)) % 2 == 1), typeof(T));
+                        return (T)Convert.ChangeType(((this.bytes[i / 8] >> (i % 8)) % 2 == 1), typeof(T));
                     case "Int32":
                         u.a = this.bytes[i * 4];
                         u.b = this.bytes[i * 4 + 1];
@@ -84,11 +84,11 @@ namespace MCProtocol
                         return (T)Convert.ChangeType(u.DINT, typeof(T));
                     case "Int16":
                         u.a = this.bytes[i * 2];
-                        u.b = this.bytes[i * 2];
+                        u.b = this.bytes[i * 2 + 1];
                         return (T)Convert.ChangeType(u.INT, typeof(T));
                     case "UInt16":
                         u.a = this.bytes[i * 2];
-                        u.b = this.bytes[i * 2];
+                        u.b = this.bytes[i * 2 + 1];
                         return (T)Convert.ChangeType(u.UINT, typeof(T));
                     case "UInt32":
                         u.a = this.bytes[i * 4];
@@ -97,8 +97,10 @@ namespace MCProtocol
                         u.d = this.bytes[i * 4 + 3];
                         return (T)Convert.ChangeType(u.UDINT, typeof(T));
                     case "Single":
-                        u.a = this.bytes[i * 2];
-                        u.b = this.bytes[i * 2 + 1];
+                        u.a = this.bytes[i * 4];
+                        u.b = this.bytes[i * 4 + 1];
+                        u.c = this.bytes[i * 4 + 2];
+                        u.d = this.bytes[i * 4 + 3];
                         return (T)Convert.ChangeType(u.REAL, typeof(T));
                     case "Char":
                         return (T)Convert.ChangeType(this.ToString()[i], typeof(T));
@@ -114,33 +116,41 @@ namespace MCProtocol
                 {
                     case "Boolean":
                         bool arg = Convert.ToBoolean(value);
-                        if (arg && (this.bytes[i / 16] >> (i % 16)) % 2 == 0)
+                        if (arg && (this.bytes[i / 8] >> (i % 8)) % 2 == 0)
                             this.bytes[i / 8] += (byte)(1 << (i % 8));
-                        else if (!arg && (this.bytes[i / 16] >> (i % 8)) % 2 == 1)
+                        else if (!arg && (this.bytes[i / 8] >> (i % 8)) % 2 == 1)
                             this.bytes[i / 8] -= (byte)(1 << (i % 8));
                         return;
                     case "Int32":
                         u.DINT = Convert.ToInt32(value);
-                        this.bytes[i * 2] = u.a;
-                        this.bytes[i * 2 + 1] = u.b;
+                        this.bytes[i * 4] = u.a;
+                        this.bytes[i * 4 + 1] = u.b;
+                        this.bytes[i * 4 + 2] = u.c;
+                        this.bytes[i * 4 + 3] = u.d;
                         return;
                     case "Int16":
                         u.INT = Convert.ToInt16(value);
-                        this.bytes[i] = u.a;
+                        this.bytes[i * 2] = u.a;
+                        this.bytes[i * 2 + 1] = u.b;
                         return;
                     case "UInt32":
                         u.UDINT = Convert.ToUInt32(value);
-                        this.bytes[i * 2] = u.a;
-                        this.bytes[i * 2 + 1] = u.b;
+                        this.bytes[i * 4] = u.a;
+                        this.bytes[i * 4 + 1] = u.b;
+                        this.bytes[i * 4 + 2] = u.c;
+                        this.bytes[i * 4 + 3] = u.d;
                         return;
                     case "UInt16":
                         u.UINT = Convert.ToUInt16(value);
                         this.bytes[i * 2] = u.a;
+                        this.bytes[i * 2] = u.b;
                         return;
                     case "Single":
                         u.REAL = Convert.ToSingle(value);
-                        this.bytes[i * 2] = u.a;
-                        this.bytes[i * 2 + 1] = u.b;
+                        this.bytes[i * 4] = u.a;
+                        this.bytes[i * 4 + 1] = u.b;
+                        this.bytes[i * 4 + 2] = u.c;
+                        this.bytes[i * 4 + 3] = u.d;
                         return;
                     default:
                         throw new Exception("Type not recognized.");
@@ -667,7 +677,7 @@ namespace MCProtocol
                 byte[] rtResponse = await TryExecution(sdCommand, length);
                 //TEST verify read responses
                 int rtCode = Command.SetResponse(rtResponse);
-                byte[] rtData = Command.Response;                
+                byte[] rtData = Command.Response;
                 return rtData;
             }
             // ====================================================================================
