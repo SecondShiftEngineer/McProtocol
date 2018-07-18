@@ -160,11 +160,11 @@ namespace MCProtocol
 
         public async Task WriteData()
         {
-            await PLC.WriteDeviceBlock(this.DeviceType, this.Address, LENGTH, bytes);
+            await PLC.WriteDeviceBlock(this.DeviceType, this.Address, Length, bytes);
         }
         public async Task ReadData()
         {
-            this.bytes = await PLC.ReadDeviceBlock(DeviceType, this.Address, this.LENGTH);
+            this.bytes = await PLC.ReadDeviceBlock(DeviceType, this.Address, this.Length);
         }
 
     }
@@ -479,10 +479,10 @@ namespace MCProtocol
                 int rtCode = Command.SetResponse(rtResponse);
                 return rtCode;
             }
-            public async Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int bSize, byte[] bData)
+            public async Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int devicePoints, byte[] bData)
             {
                 //FIXME
-                int iSize = bSize / 2;
+                int iSize = devicePoints;
                 PlcDeviceType type = iType;
                 int addr = iAddress;
                 List<byte> data;
@@ -619,9 +619,9 @@ namespace MCProtocol
                 }
                 return rtData;
             }
-            public async Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int bSize)
+            public async Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int devicePoints)
             {
-                int iSize = bSize / 2;
+                int iSize = devicePoints;
                 PlcDeviceType type = iType;
                 int addr = iAddress;
                 List<byte> data;
