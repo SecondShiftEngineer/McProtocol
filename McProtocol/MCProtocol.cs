@@ -37,7 +37,7 @@ namespace MCProtocol
             switch (t)
             {
                 case "Boolean":
-                    this.LENGTH = (Length / 16 + (Length % 16 > 0 ? 1 : 0))*2;
+                    this.LENGTH = (Length / 16 + (Length % 16 > 0 ? 1 : 0)) * 2;
                     break;
                 case "Int32":
                     this.LENGTH = 4 * Length;
@@ -479,9 +479,10 @@ namespace MCProtocol
                 int rtCode = Command.SetResponse(rtResponse);
                 return rtCode;
             }
-            public async Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int iSize, byte[] bData)
+            public async Task<int> WriteDeviceBlock(PlcDeviceType iType, int iAddress, int bSize, byte[] bData)
             {
-
+                //FIXME
+                int iSize = bSize / 2;
                 PlcDeviceType type = iType;
                 int addr = iAddress;
                 List<byte> data;
@@ -618,9 +619,9 @@ namespace MCProtocol
                 }
                 return rtData;
             }
-            public async Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int iSize)
+            public async Task<byte[]> ReadDeviceBlock(PlcDeviceType iType, int iAddress, int bSize)
             {
-
+                int iSize = bSize / 2;
                 PlcDeviceType type = iType;
                 int addr = iAddress;
                 List<byte> data;
