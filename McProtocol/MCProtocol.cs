@@ -37,7 +37,7 @@ namespace MCProtocol
             switch (t)
             {
                 case "Boolean":
-                    this.LENGTH = Length;
+                    this.LENGTH = (Length / 16 + (Length % 16 > 0 ? 1 : 0))*2;
                     break;
                 case "Int32":
                     this.LENGTH = 4 * Length;
