@@ -20,6 +20,7 @@ namespace MCProtocol
     public class PLCData
     {
         public static Mitsubishi.Plc PLC;
+
     }
     public class PLCData<T> : PLCData
     {
@@ -32,33 +33,41 @@ namespace MCProtocol
         {
             this.DeviceType = DeviceType;
             this.Address = Address;
-            this.Length = Length;
+
             string t = typeof(T).Name;
             switch (t)
             {
                 case "Boolean":
                     this.LENGTH = (Length / 16 + (Length % 16 > 0 ? 1 : 0)) * 2;
+                    this.Length = Length;
                     break;
                 case "Int32":
                     this.LENGTH = 4 * Length;
+                    this.Length = Length * 2;
                     break;
                 case "Int16":
                     this.LENGTH = 2 * Length;
+                    this.Length = Length;
                     break;
                 case "UInt16":
                     this.LENGTH = 2 * Length;
+                    this.Length = Length;
                     break;
                 case "UInt32":
                     this.LENGTH = 4 * Length;
+                    this.Length = Length * 2;
                     break;
                 case "Single":
                     this.LENGTH = 4 * Length;
+                    this.Length = Length * 2;
                     break;
                 case "Double":
                     this.LENGTH = 8 * Length;
+                    this.Length = Length * 4;
                     break;
                 case "Char":
                     this.LENGTH = Length;
+                    this.Length = Length;
                     break;
                 default:
                     throw new Exception("Type not supported by PLC.");
@@ -252,6 +261,7 @@ namespace MCProtocol
         // PLCと接続するための共通のインターフェースを定義する
         public interface Plc : IDisposable
         {
+            bool Connected { get; }
             Task<int> Open();
             int Close();
             Task<int> SetBitDevice(string iDeviceName, int iSize, int[] iData);
@@ -272,6 +282,7 @@ namespace MCProtocol
         // ########################################################################################
         abstract public class McProtocolApp : Plc
         {
+            public abstract bool Connected{ get; }
             // ====================================================================================
             public McFrame CommandFrame { get; set; }   // 使用フレーム
             public string HostName { get; set; }   // ホスト名またはIPアドレス
@@ -907,6 +918,9 @@ namespace MCProtocol
             // &&&&& private &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
             private const int BlockSize = 0x0010;
             private McCommand Command { get; set; }
+
+
+
             // ================================================================================
             private async Task<byte[]> TryExecution(byte[] iCommand, int minlength)
             {
@@ -1094,6 +1108,13 @@ namespace MCProtocol
         {
             // ====================================================================================
             // コンストラクタ
+            public override bool Connected
+            {
+                get
+                {
+                    return Client.Connected;                    
+                }
+            }
             public McProtocolTcp() : this("", 0, McFrame.MC3E) { }
             public McProtocolTcp(string iHostName, int iPortNumber, McFrame frame)
                 : base(iHostName, iPortNumber, frame)
@@ -1118,17 +1139,18 @@ namespace MCProtocol
                 await this.streamSocket.ConnectAsync(this.Host, "" + this.Port);
 #endif
 #if old
-                TcpClient c = Client;
-                if (!c.Connected)
+                //TcpClient c = Client;
+                if (!Client.Connected)
                 {
                     // Keep Alive機能の実装
                     var ka = new List<byte>(sizeof(uint) * 3);
                     ka.AddRange(BitConverter.GetBytes(1u));
                     ka.AddRange(BitConverter.GetBytes(45000u));
                     ka.AddRange(BitConverter.GetBytes(5000u));
-                    c.Client.IOControl(IOControlCode.KeepAliveValues, ka.ToArray(), null);
-                    c.Connect(HostName, PortNumber);
-                    Stream = c.GetStream();
+                    Client.Client.IOControl(IOControlCode.KeepAliveValues, ka.ToArray(), null);
+                    Client.Connect(HostName, PortNumber);
+                    Stream = Client.GetStream();
+
                 }
 #endif
                 return 0;
