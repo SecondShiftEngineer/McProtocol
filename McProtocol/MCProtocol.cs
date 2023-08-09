@@ -26,8 +26,8 @@ namespace MCProtocol
     {
         Mitsubishi.PlcDeviceType DeviceType;
         int Address;
-        int Length;
-        int LENGTH;//Length in bytes
+        public int Length { get; private set; }
+        public int BytesLength { get; private set; } //Length in bytes
         byte[] bytes;
         public PLCData(Mitsubishi.PlcDeviceType DeviceType, int Address, int Length)
         {
@@ -38,41 +38,41 @@ namespace MCProtocol
             switch (t)
             {
                 case "Boolean":
-                    this.LENGTH = (Length / 16 + (Length % 16 > 0 ? 1 : 0)) * 2;
+                    this.BytesLength = (Length / 16 + (Length % 16 > 0 ? 1 : 0)) * 2;
                     this.Length = Length;
                     break;
                 case "Int32":
-                    this.LENGTH = 4 * Length;
+                    this.BytesLength = 4 * Length;
                     this.Length = Length * 2;
                     break;
                 case "Int16":
-                    this.LENGTH = 2 * Length;
+                    this.BytesLength = 2 * Length;
                     this.Length = Length;
                     break;
                 case "UInt16":
-                    this.LENGTH = 2 * Length;
+                    this.BytesLength = 2 * Length;
                     this.Length = Length;
                     break;
                 case "UInt32":
-                    this.LENGTH = 4 * Length;
+                    this.BytesLength = 4 * Length;
                     this.Length = Length * 2;
                     break;
                 case "Single":
-                    this.LENGTH = 4 * Length;
+                    this.BytesLength = 4 * Length;
                     this.Length = Length * 2;
                     break;
                 case "Double":
-                    this.LENGTH = 8 * Length;
+                    this.BytesLength = 8 * Length;
                     this.Length = Length * 4;
                     break;
                 case "Char":
-                    this.LENGTH = Length;
+                    this.BytesLength = Length;
                     this.Length = Length;
                     break;
                 default:
                     throw new Exception("Type not supported by PLC.");
             }
-            this.bytes = new byte[this.LENGTH];
+            this.bytes = new byte[this.BytesLength];
 
         }
         public T this[int i]
@@ -152,7 +152,7 @@ namespace MCProtocol
                     case "UInt16":
                         u.UINT = Convert.ToUInt16(value);
                         this.bytes[i * 2] = u.a;
-                        this.bytes[i * 2] = u.b;
+                        this.bytes[i * 2 + 1] = u.b;
                         return;
                     case "Single":
                         u.REAL = Convert.ToSingle(value);
